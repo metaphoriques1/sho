@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopify Inventory AI - Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .status {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        .status-item {
+            flex: 1;
+            min-width: 200px;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .status-item.error {
+            border-left-color: #e74c3c;
+        }
+        .status-item.success {
+            border-left-color: #27ae60;
+        }
+        .status-label {
+            font-size: 12px;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+        .status-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+        .section {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 20px;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 10px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            color: #555;
+            font-weight: 500;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        button {
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102,126,234,0.4);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        button.secondary {
+            background: #95a3a6;
+        }
+        button.secondary:hover {
+            background: #7f8a8c;
+        }
+        button.danger {
+            background: #e74c3c;
+        }
+        button.danger:hover {
+            background: #c0392b;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .log-viewer {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 6px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            line-height: 1.5;
+            border: 1px solid #333;
+        }
+        .log-line {
+            margin-bottom: 8px;
+        }
+        .log-line.error {
+            color: #f48771;
+        }
+        .log-line.success {
+            color: #89d185;
+        }
+        .log-line.warn {
+            color: #d4a574;
+        }
+        .log-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+        }
+        .log-item {
+            padding: 12px;
+            background: #f5f5f5;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid #eee;
+        }
+        .log-item:hover {
+            background: #e8e8e8;
+            border-color: #667eea;
+        }
+        .alert {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            display: none;
+        }
+        .alert.show {
+            display: block;
+        }
+        .alert.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .alert.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .alert.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-box {
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #eee;
+        }
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #999;
+            margin-top: 8px;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Shopify Inventory AI</h1>
+            <p style="color: #999; margin-bottom: 15px;">Automatic replenishment management</p>
+            <div class="status">
+                <div class="status-item" id="status-connection">
+                    <div class="status-label">Connection</div>
+                    <div class="status-value"><span class="spinner"></span> Checking...</div>
+                </div>
+                <div class="status-item" id="status-lastrun">
+                    <div class="status-label">Last Run</div>
+                    <div class="status-value">Never</div>
+                </div>
+                <div class="status-item" id="status-nextrun">
+                    <div class="status-label">Next Scheduled</div>
+                    <div class="status-value">In ~1 hour</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="alert" class="alert"></div>
+
+        <div class="section">
+            <h2>⚙️ Configuration</h2>
+            <form id="configForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="store">Shopify Store URL</label>
+                        <input type="text" id="store" placeholder="your-store.myshopify.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="token">Access Token</label>
+                        <input type="password" id="token" placeholder="shpat_..." required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="leadTime">Lead Time (days)</label>
+                        <input type="number" id="leadTime" value="7" min="1" max="60">
+                    </div>
+                    <div class="form-group">
+                        <label for="safetyStock">Safety Stock (units)</label>
+                        <input type="number" id="safetyStock" value="10" min="0" max="1000">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="minOrder">Minimum Order Quantity</label>
+                    <input type="number" id="minOrder" value="5" min="1" max="1000">
+                </div>
+                <button type="submit" style="width: 100%;">Save Configuration</button>
+            </form>
+        </div>
+
+        <div class="section">
+            <h2>🎬 Actions</h2>
+            <div class="button-group">
+                <button id="runButton" onclick="triggerRun()">Run Check Now</button>
+                <button id="healthButton" class="secondary" onclick="checkHealth()">Check Status</button>
+            </div>
+            <div id="runResult" style="margin-top: 20px; padding: 15px; background: #f5f5f5; border-radius: 6px; display: none;">
+                <pre id="runResultText"></pre>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📊 Last Run Results</h2>
+            <div class="stats-grid" id="statsGrid"></div>
+            <div id="lastRunDetail" style="color: #999; font-size: 14px;">No run data yet</div>
+        </div>
+
+        <div class="section">
+            <h2>📋 Logs</h2>
+            <div id="logList" class="log-list" style="margin-bottom: 20px;"></div>
+            <div id="logViewer" class="log-viewer" style="display: none;"></div>
+            <button id="backButton" class="secondary" onclick="goBackToLogs()" style="display: none; margin-top: 10px;">← Back to Logs</button>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+        
+        // Load config from localStorage
+        function loadConfig() {
+            const config = localStorage.getItem('inventoryConfig');
+            if (config) {
+                const { store, token, leadTime, safetyStock, minOrder } = JSON.parse(config);
+                document.getElementById('store').value = store || '';
+                document.getElementById('token').value = token || '';
+                document.getElementById('leadTime').value = leadTime || 7;
+                document.getElementById('safetyStock').value = safetyStock || 10;
+                document.getElementById('minOrder').value = minOrder || 5;
+            }
+        }
+
+        // Save config
+        document.getElementById('configForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const store = document.getElementById('store').value;
+            const token = document.getElementById('token').value;
+            const leadTime = parseInt(document.getElementById('leadTime').value);
+            const safetyStock = parseInt(document.getElementById('safetyStock').value);
+            const minOrder = parseInt(document.getElementById('minOrder').value);
+
+            try {
+                showAlert('Saving configuration...', 'info');
+                const res = await fetch(`${API_BASE}/configure`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ store, token, lead_time_days: leadTime, safety_stock: safetyStock, min_order_qty: minOrder })
+                });
+
+                if (!res.ok) throw new Error(await res.text());
+
+                localStorage.setItem('inventoryConfig', JSON.stringify({ store, token, leadTime, safetyStock, minOrder }));
+                showAlert('✅ Configuration saved!', 'success');
+                checkHealth();
+            } catch (err) {
+                showAlert(`❌ ${err.message}`, 'error');
+            }
+        });
+
+        // Check health
+        async function checkHealth() {
+            try {
+                const res = await fetch(`${API_BASE}/health`);
+                const data = await res.json();
+                const statusEl = document.getElementById('status-connection');
+                if (data.status === 'connected') {
+                    statusEl.classList.add('success');
+                    statusEl.innerHTML = '<div class="status-label">Connection</div><div class="status-value">✅ Connected</div>';
+                } else {
+                    statusEl.classList.remove('success');
+                    statusEl.innerHTML = '<div class="status-label">Connection</div><div class="status-value">⚠️ Not Configured</div>';
+                }
+            } catch (err) {
+                document.getElementById('status-connection').innerHTML = '<div class="status-label">Connection</div><div class="status-value">❌ Offline</div>';
+            }
+        }
+
+        // Trigger run
+        async function triggerRun() {
+            const btn = document.getElementById('runButton');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Running...';
+
+            try {
+                showAlert('Running inventory check...', 'info');
+                const res = await fetch(`${API_BASE}/run-check`, { method: 'POST' });
+                const data = await res.json();
+
+                if (!res.ok) throw new Error(data.error || 'Unknown error');
+
+                // Show results
+                document.getElementById('runResult').style.display = 'block';
+                document.getElementById('runResultText').textContent = JSON.stringify(data, null, 2);
+
+                // Update stats
+                updateStats(data);
+
+                showAlert(`✅ Check complete! ${data.replenishments_triggered} items need replenishment.`, 'success');
+                loadLogs();
+            } catch (err) {
+                showAlert(`❌ ${err.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = 'Run Check Now';
+            }
+        }
+
+        // Update stats display
+        function updateStats(data) {
+            const grid = document.getElementById('statsGrid');
+            grid.innerHTML = `
+                <div class="stat-box">
+                    <div class="stat-number">${data.products_checked}</div>
+                    <div class="stat-label">Products Checked</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number">${data.replenishments_triggered}</div>
+                    <div class="stat-label">Replenishments</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number">${data.errors.length}</div>
+                    <div class="stat-label">Errors</div>
+                </div>
+            `;
+            
+            if (data.draft_order_id) {
+                document.getElementById('lastRunDetail').innerHTML = 
+                    `<strong>Draft Order:</strong> #${data.draft_order_id} | <strong>Time:</strong> ${new Date(data.timestamp).toLocaleString()}`;
+            }
+        }
+
+        // Load logs
+        async function loadLogs() {
+            try {
+                const res = await fetch(`${API_BASE}/logs`);
+                const logs = await res.json();
+                const logList = document.getElementById('logList');
+                logList.innerHTML = logs.map(log => 
+                    `<div class="log-item" onclick="viewLog('${log.date}')">${log.date}</div>`
+                ).join('');
+            } catch (err) {
+                console.error('Failed to load logs:', err);
+            }
+        }
+
+        // View log
+        async function viewLog(filename) {
+            try {
+                const res = await fetch(`${API_BASE}/logs/${filename}`);
+                const content = await res.text();
+                document.getElementById('logViewer').style.display = 'block';
+                document.getElementById('backButton').style.display = 'block';
+                document.getElementById('logList').style.display = 'none';
+                
+                // Highlight different log types
+                const lines = content.split('\n').map(line => {
+                    let className = '';
+                    if (line.includes('[ERROR]')) className = 'error';
+                    else if (line.includes('[SUCCESS]') || line.includes('✅')) className = 'success';
+                    else if (line.includes('[WARN]')) className = 'warn';
+                    return `<div class="log-line ${className}">${escapeHtml(line)}</div>`;
+                }).join('');
+                
+                document.getElementById('logViewer').innerHTML = lines;
+            } catch (err) {
+                showAlert(`Failed to load log: ${err.message}`, 'error');
+            }
+        }
+
+        function goBackToLogs() {
+            document.getElementById('logViewer').style.display = 'none';
+            document.getElementById('backButton').style.display = 'none';
+            document.getElementById('logList').style.display = 'grid';
+        }
+
+        // Alert helper
+        function showAlert(message, type) {
+            const alert = document.getElementById('alert');
+            alert.textContent = message;
+            alert.className = `alert show ${type}`;
+            setTimeout(() => alert.classList.remove('show'), 5000);
+        }
+
+        function escapeHtml(text) {
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        // Initialize
+        loadConfig();
+        checkHealth();
+        loadLogs();
+        setInterval(checkHealth, 30000);
+    </script>
+</body>
+</html>

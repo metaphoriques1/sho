@@ -1,7 +1,7 @@
 {
-  "name": "shopify-inventory-ai",
+  "name": "shopify-saas-platform",
   "version": "1.0.0",
-  "description": "Automatic inventory replenishment for Shopify using AI demand forecasting",
+  "description": "Complete Shopify SaaS platform with inventory, analytics, customers, and campaigns",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -10,23 +10,20 @@
   },
   "keywords": [
     "shopify",
+    "saas",
     "inventory",
-    "replenishment",
-    "automation",
-    "demand-forecasting"
+    "analytics",
+    "automation"
   ],
   "author": "Your Name",
   "license": "MIT",
   "dependencies": {
     "express": "^4.18.2",
     "axios": "^1.6.0",
-    "node-cron": "^3.0.2",
-    "dotenv": "^16.3.1"
+    "dotenv": "^16.3.1",
+    "node-cron": "^3.0.2"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
-  },
-  "engines": {
-    "node": ">=16.0.0"
   }
 }

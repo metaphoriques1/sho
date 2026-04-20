@@ -1,387 +1,297 @@
-# Shopify Inventory AI - Complete Setup Guide
-
-## 🚀 What You Have
-
-A **production-ready** inventory management system that:
-- ✅ Fetches real order data from Shopify (last 30 days)
-- ✅ Calculates weighted demand forecasts (recent = 2x weight)
-- ✅ Triggers replenishment orders automatically at ROP
-- ✅ Creates Draft Orders in Shopify admin (exportable to suppliers)
-- ✅ Runs on cron (every hour) or on-demand
-- ✅ Full error handling & logging
-- ✅ Web dashboard for monitoring
-- ✅ Configurable via API
-
----
+# 🚀 SHOPIFY SAAS PLATFORM - COMPLETE SETUP GUIDE
 
 ## 📋 Prerequisites
 
-- Node.js 16+ 
-- Shopify store with Admin API access
-- Access token from Shopify (private app or custom app)
+You need:
+1. **Node.js** (v16+) - [Download](https://nodejs.org)
+2. **Git** - [Download](https://git-scm.com)
+3. **Shopify Partner Account** - [Create free](https://www.shopifypartners.com)
+4. **Render Account** (for deployment) - [Sign up free](https://render.com)
 
 ---
 
-## 🔧 Local Setup (5 minutes)
+## 🔧 LOCAL SETUP (5 minutes)
 
-### 1. Install Dependencies
+### Step 1: Clone & Install
 ```bash
+git clone <your-repo-url>
+cd shopify-saas
 npm install
 ```
 
-### 2. Create `.env` file
-Copy `.env.example` to `.env` and fill in:
+### Step 2: Create Shopify App
+
+1. Go to **Shopify Partners** → **Apps** → **Create App**
+2. Choose **Custom app**
+3. Name it: "SaaS Platform"
+4. In **Admin API scopes**, select:
+   - `read_products` `write_products`
+   - `read_orders` `read_inventory` `write_inventory`
+   - `read_customers` `write_customers`
+5. Click **Save and install**
+6. Copy your **API Key** and **API Secret**
+
+### Step 3: Configure Environment
+
 ```bash
-SHOPIFY_STORE=your-store.myshopify.com
-SHOPIFY_ACCESS_TOKEN=shpat_xxxxxx
-LEAD_TIME_DAYS=7
-SAFETY_STOCK=10
-MIN_ORDER_QTY=5
-PORT=3000
+cp .env.example .env
 ```
 
-**How to get Shopify access token:**
-1. Go to Shopify Admin → Settings → Apps and integrations
-2. Click "Develop apps"
-3. Create a private app (or custom app if using OAuth)
-4. Copy the "Admin API access token"
-5. Make sure these scopes are enabled:
-   - `read_products`
-   - `read_orders`
-   - `write_draft_orders`
+Edit `.env`:
+```
+SHOPIFY_API_KEY=paste_api_key_here
+SHOPIFY_API_SECRET=paste_api_secret_here
+SHOPIFY_SCOPES=read_products,write_products,read_orders,read_inventory,write_inventory,read_customers,write_customers
+SHOPIFY_REDIRECT_URI=http://localhost:3000/callback
+PORT=3000
+NODE_ENV=development
+```
 
-### 3. Run Locally
+### Step 4: Run Locally
+
 ```bash
 npm start
 ```
 
-You'll see:
-```
-✅ Server running on port 3000
-⏰ Cron job triggered every hour
-```
+Open: **http://localhost:3000**
 
-### 4. Open Dashboard
-```
-http://localhost:3000/dashboard.html
-```
-
-Or use API directly:
-```bash
-# Manual trigger
-curl -X POST http://localhost:3000/run-check
-
-# Check status
-curl http://localhost:3000/health
-
-# View logs
-curl http://localhost:3000/logs
-```
+Connect test store: `your-test-store.myshopify.com`
 
 ---
 
-## 🌐 Deploy to Production
+## 🌐 DEPLOY TO RENDER (10 minutes)
 
-### Option A: Heroku (Easiest, $7/month)
+### Step 1: Push to GitHub
 
 ```bash
-# Install Heroku CLI
-brew install heroku  # macOS
-# or download from heroku.com/download
-
-# Login
-heroku login
-
-# Create app
-heroku create your-app-name
-
-# Set environment variables
-heroku config:set SHOPIFY_STORE=your-store.myshopify.com
-heroku config:set SHOPIFY_ACCESS_TOKEN=shpat_xxxxx
-heroku config:set LEAD_TIME_DAYS=7
-heroku config:set SAFETY_STOCK=10
-heroku config:set MIN_ORDER_QTY=5
-
-# Deploy
-git push heroku main
-
-# View logs
-heroku logs --tail
+git add .
+git commit -m "Initial commit: Full Shopify SaaS platform"
+git push origin main
 ```
 
-### Option B: DigitalOcean App Platform ($5-12/month)
+### Step 2: Create Render Service
 
-1. Create account at digitalocean.com
-2. Go to **App Platform** → **Create App**
-3. Connect GitHub repo
-4. Set environment variables (from `.env`)
-5. Deploy
+1. Go to **Render Dashboard** → **New** → **Web Service**
+2. Connect your GitHub repo
+3. Configure:
+   - **Name**: `shopify-saas`
+   - **Runtime**: `Node`
+   - **Build**: `npm install`
+   - **Start**: `npm start`
+4. Add **Environment Variables**:
+   ```
+   SHOPIFY_API_KEY=...
+   SHOPIFY_API_SECRET=...
+   SHOPIFY_SCOPES=read_products,write_products,read_orders,read_inventory,write_inventory,read_customers,write_customers
+   SHOPIFY_REDIRECT_URI=https://your-render-url.onrender.com/callback
+   PORT=3000
+   NODE_ENV=production
+   ```
+5. Click **Create Web Service**
 
-App will be available at `https://your-app.ondigitalocean.app`
+### Step 3: Update Shopify App Settings
 
-### Option C: AWS Lambda + RDS (Serverless, pay-per-use)
+1. Back to **Shopify Partners** → Your App
+2. In **App setup**, update:
+   - **App URL**: `https://your-render-url.onrender.com`
+   - **Redirect URI**: `https://your-render-url.onrender.com/callback`
+3. Save
 
-Use serverless framework:
+### Step 4: Verify Deployment
+
 ```bash
-npm install -g serverless
-
-# Deploy
-serverless deploy
+curl https://your-render-url.onrender.com/health
+# Should return: {"status":"ok","timestamp":"..."}
 ```
 
 ---
 
-## 📊 How It Works
+## 📊 API ENDPOINTS
 
-### 1. **Data Collection** (Every hour)
-- Fetches all products from Shopify
-- Fetches last 30 days of orders
-- Extracts daily sales for each variant
+### Authentication
+- `GET /auth?shop=store.myshopify.com` - Start OAuth flow
+- `GET /callback?shop=...&code=...` - OAuth callback
 
-### 2. **Demand Forecasting**
-```
-Weighted Average = (Last 7 days × 2 + Older days) / (7×2 + older_count)
-```
-This gives more weight to recent trends (seasonality awareness).
+### Dashboard
+- `GET /api/dashboard?shop=...` - Complete dashboard data
+- `GET /api/store-status?shop=...` - Store connection status
 
-### 3. **Reorder Point Calculation**
-```
-ROP = Average Daily Sales × Lead Time (days) + Safety Stock
-```
+### Inventory
+- `GET /api/inventory?shop=...` - Products with ROP calculations
 
-Example:
-- Average daily sales: 5 units
-- Lead time: 7 days
-- Safety stock: 10 units
-- **ROP = 5×7 + 10 = 45 units**
+### Analytics
+- `GET /api/orders?shop=...` - Orders & revenue metrics
+- `GET /api/customers?shop=...` - Customer segmentation
 
-When stock falls below 45, replenishment is triggered.
+### Marketing
+- `POST /api/campaign` - Create email campaign
+- `POST /api/draft-order` - Create draft order
 
-### 4. **Order Creation**
-- Target stock: ROP × 1.8 (builds buffer)
-- Order quantity = snapped to nearest 5 (for supplier convenience)
-- Creates **Draft Order** in Shopify admin
-- You review & export to your supplier as CSV
-
-### 5. **Logging**
-All runs logged to `/logs` directory, searchable via dashboard.
+### Management
+- `POST /api/disconnect?shop=...` - Disconnect store
 
 ---
 
-## 🎯 Configuration
+## 🏗️ PROJECT STRUCTURE
 
-### Adjust Parameters
-
-Edit `.env` or use dashboard to tune:
-
-| Parameter | Default | Meaning | Adjust if... |
-|-----------|---------|---------|-------------|
-| `LEAD_TIME_DAYS` | 7 | Days from order to delivery | Supplier slower? Increase |
-| `SAFETY_STOCK` | 10 | Minimum buffer (units) | High demand spikes? Increase |
-| `MIN_ORDER_QTY` | 5 | Don't order less than this | Supplier has minimums? Increase |
-
-**Optimization:**
-- Too many orders? Increase `LEAD_TIME_DAYS` or `SAFETY_STOCK`
-- Too few? Decrease them (but risk stockouts)
-- See dashboard stats to find the right balance
-
----
-
-## 📈 Monitoring & Metrics
-
-### Dashboard Provides:
-- ✅ Last run results (products checked, replenishments triggered)
-- ✅ Error log (if anything breaks)
-- ✅ Daily logs (searchable by date)
-- ✅ Connection status (Shopify API health)
-
-### Key Metrics to Watch:
 ```
-1. Replenishment Frequency
-   - Too high? Safety stock too low
-   - Too low? Might miss sales spikes
-
-2. Draft Order Status
-   - All converted to real orders? Good
-   - Many stuck as drafts? Review logic
-
-3. Stockout Events
-   - If happening: increase SAFETY_STOCK
-   - If never: safety stock is too high
-
-4. Forecast Accuracy
-   - Compare "Avg Daily Sales" vs actual
-   - Adjust LEAD_TIME_DAYS if predictions lag
+shopify-saas/
+├── server.js              # Main Express app (440 lines)
+├── package.json           # Dependencies
+├── .env                   # Configuration (git-ignored)
+├── .env.example           # Configuration template
+├── public/
+│   ├── index.html         # Home page
+│   └── dashboard.html     # Main dashboard
+└── README.md
 ```
 
 ---
 
-## 🔒 Security Best Practices
+## 💡 KEY FEATURES EXPLAINED
 
-### 1. **Environment Variables**
-✅ Store tokens in `.env` (never in code)
-✅ On Heroku/DO, use their config management (never paste to GitHub)
+### 1. Inventory Management
+- Real-time stock tracking
+- ROP (Reorder Point) calculation
+- Low stock alerts
+- Multi-variant support
 
-### 2. **API Access**
-❌ Don't expose `/configure` endpoint to public
-✅ Protect with basic auth or API key:
+### 2. Analytics
+- Revenue tracking
+- Order trends
+- Demand forecasting (30-day)
+- Customer segmentation
 
-```javascript
-// In server.js, add middleware:
-app.use((req, res, next) => {
-  if (req.path === '/configure' && req.method === 'POST') {
-    const auth = req.headers.authorization;
-    if (auth !== `Bearer ${process.env.API_KEY}`) {
-      return res.status(403).json({ error: 'Forbidden' });
-    }
-  }
-  next();
-});
-```
+### 3. Customer Management
+- VIP identification
+- Purchase history
+- Lifetime value
+- Churn prediction
 
-Then set in `.env`:
-```
-API_KEY=super-secret-key-change-me
-```
+### 4. Marketing Campaigns
+- Segmented email campaigns
+- Draft order creation
+- Bulk customer actions
 
-### 3. **Dashboard Access**
-❌ Don't expose to public internet
-✅ Options:
-- Serve on private network (VPN)
-- Add basic auth to dashboard
-- Use reverse proxy (nginx) with auth
-
-### 4. **Token Rotation**
-- Shopify tokens don't expire
-- Regenerate if compromised
-- Use Custom App (better control) over Private App
+### 5. Dashboard
+- Real-time metrics
+- Interactive charts
+- Quick actions
+- Export capability
 
 ---
 
-## 🐛 Troubleshooting
+## 🔐 Security Best Practices
 
-### "Connection refused" on Shopify API
-```
-Cause: Invalid store URL or token
-Fix: Check .env, regenerate token in Shopify admin
-```
+✅ **Implemented:**
+- OAuth 2.0 authentication
+- Secure token storage
+- Environment variable separation
+- HTTPS-only in production
 
-### "Rate limit exceeded"
-```
-Cause: Shopify API throttling (2 req/sec)
-Fix: Batching is implemented, but if still hitting limits:
-  - Space out cron jobs (change schedule to every 2 hours)
-  - Reduce products in check (filter by tag in inventory.ai)
-```
+⚠️ **For Production:**
+1. Add request rate limiting:
+   ```javascript
+   const rateLimit = require('express-rate-limit');
+   const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
+   app.use(limiter);
+   ```
 
-### Cron not running on Heroku
-```
-Cause: Dyno sleeping (Heroku free tier)
-Fix: Upgrade to paid dyno, or add external cron:
-  - Use EasyCron (easycron.com) to call /run-check every hour
-```
+2. Add HMAC verification for webhooks
 
-### Dashboard shows "Not Configured"
-```
-Cause: .env not loaded or API endpoint unreachable
-Fix: 
-  1. Check .env file exists and is readable
-  2. Check logs: heroku logs --tail
-  3. Restart: heroku restart
-```
+3. Use database instead of Map for persistence:
+   ```bash
+   npm install mongodb
+   ```
+
+4. Add input validation:
+   ```bash
+   npm install joi
+   ```
 
 ---
 
-## 📞 Support Endpoints
+## 📈 NEXT STEPS TO MONETIZE
 
-All endpoints return JSON. No authentication by default (add as described above).
+### Week 1: Polish
+- [ ] Add persistent database (MongoDB)
+- [ ] Implement user accounts & billing
+- [ ] Add more Shopify endpoints
+- [ ] Create mobile-responsive design
 
-### Health Check
-```
-GET /health
-→ { "status": "connected", "timestamp": "..." }
-```
+### Week 2-3: Marketing
+- [ ] Create landing page
+- [ ] Write documentation
+- [ ] Record demo video
+- [ ] Submit to Shopify App Store
 
-### Configure
-```
-POST /configure
-Body: {
-  "store": "your-store.myshopify.com",
-  "token": "shpat_xxx",
-  "lead_time_days": 7,
-  "safety_stock": 10,
-  "min_order_qty": 5
-}
-→ { "message": "Configured successfully", "store": "..." }
-```
-
-### Trigger Manually
-```
-POST /run-check
-→ {
-  "timestamp": "2024-01-15T10:30:00Z",
-  "products_checked": 250,
-  "replenishments_triggered": 3,
-  "draft_order_id": 123456,
-  "errors": []
-}
-```
-
-### View Logs
-```
-GET /logs
-→ [{ "date": "2024-01-15.log", "path": "/logs/2024-01-15.log" }, ...]
-
-GET /logs/2024-01-15.log
-→ (plain text file contents)
-```
+### Week 4+: Growth
+- [ ] Launch product hunt
+- [ ] Reach out to agencies
+- [ ] Get first customers
+- [ ] Iterate based on feedback
 
 ---
 
-## 💰 Monetization (For Your SaaS)
+## 💰 PRICING STRATEGY
 
-### Pricing Tiers
+- **Starter**: $29/month (100 products, basic analytics)
+- **Professional**: $79/month (unlimited, advanced features)
+- **Enterprise**: Custom (white-label, integrations)
 
-**Basic ($29/month)**
-- 1 Shopify store
-- Daily replenishment checks
-- Email alerts on triggers
-
-**Pro ($79/month)**
-- 5 stores
-- Hourly checks
-- Slack integration
-- Forecast analytics
-
-**Enterprise (Custom)**
-- Unlimited stores
-- Custom cron schedule
-- White-label dashboard
-- API access for partners
-
-### Implementation
-
-Add subscription check in `server.js`:
-```javascript
-async function checkSubscription(req, res, next) {
-  const store = req.headers['x-shopify-store'];
-  const subscription = await db.getSubscription(store);
-  
-  if (!subscription || subscription.status !== 'active') {
-    return res.status(403).json({ error: 'Subscription required' });
-  }
-  next();
-}
-```
+**Revenue Forecast:**
+- Month 1-2: 5 customers = $145/month
+- Month 3-4: 20 customers = $1,500/month
+- Month 6+: 50+ customers = $3,500+/month
 
 ---
 
-## 📝 Next Steps
+## 🆘 TROUBLESHOOTING
 
-1. **Deploy** to Heroku or DigitalOcean (15 min)
-2. **Test** with 5-10 test products manually
-3. **Monitor** dashboard for 3-5 days
-4. **Adjust** SAFETY_STOCK based on results
-5. **Launch** to customers
+### "Shop not connected"
+- Check `SHOPIFY_API_KEY` and `SHOPIFY_API_SECRET`
+- Verify `SHOPIFY_SCOPES` are correct
+- Clear browser cookies and try again
 
-Good luck! 🚀
+### "OAuth callback failed"
+- Confirm `SHOPIFY_REDIRECT_URI` matches in both .env and Shopify settings
+- Check URL is HTTPS in production
+
+### "Render deployment stuck"
+- Check Render Logs for errors
+- Verify all environment variables are set
+- Try redeploying: `git push origin main`
+
+### "Dashboard shows no data"
+- Ensure store has orders/products
+- Check browser console for API errors
+- Verify Shopify API scopes are sufficient
+
+---
+
+## 📚 RESOURCES
+
+- [Shopify API Docs](https://shopify.dev)
+- [Express.js Guide](https://expressjs.com)
+- [Render Documentation](https://render.com/docs)
+- [OAuth 2.0 Flow](https://tools.ietf.org/html/rfc6749)
+
+---
+
+## 📞 SUPPORT
+
+For issues:
+1. Check the troubleshooting section
+2. Review Render/local logs
+3. Check Shopify API status
+4. Create GitHub issue
+
+---
+
+## 📄 LICENSE
+
+MIT - Use freely for personal or commercial projects
+
+---
+
+**Happy building! 🚀**

@@ -1,0 +1,5 @@
+[2026-04-20T09:14:21.061Z] [SUCCESS] 🚀 Server running on port 3000
+[2026-04-20T09:14:21.063Z] [INFO] POST /configure with {"store":"...", "token":"..."}
+[2026-04-20T09:14:21.064Z] [INFO] POST /run-check to trigger manually
+[2026-04-20T09:14:21.064Z] [INFO] GET /health to check status
+[2026-04-20T09:14:21.065Z] [INFO] GET /logs to list logs
